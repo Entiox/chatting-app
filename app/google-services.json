@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "801046718259",
+    "project_id": "chatier-fff4e",
+    "storage_bucket": "chatier-fff4e.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:801046718259:android:5ae24f31fcfcd9bea00046",
+        "android_client_info": {
+          "package_name": "hr.ferit.drazen.antunovic.chatier"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDR41tPSTGhMVBD89YsaENHiyIicQFaDMM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
