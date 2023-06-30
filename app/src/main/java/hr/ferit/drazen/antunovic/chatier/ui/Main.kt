@@ -53,8 +53,7 @@ fun Main(modifier: Modifier = Modifier) {
                     isPermissionLauncherLaunched = true
                     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                         permissionLauncher.launch(arrayOf(Manifest.permission.READ_MEDIA_IMAGES, Manifest.permission.POST_NOTIFICATIONS))
-                    }
-                    else {
+                    } else {
                         permissionLauncher.launch(arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE))
                     }
                 }
