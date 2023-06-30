@@ -2,8 +2,6 @@ package hr.ferit.drazen.antunovic.chatier.ui.routes.signup
 
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.AuthResult
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
 import hr.ferit.drazen.antunovic.chatier.data.Result
 import hr.ferit.drazen.antunovic.chatier.viewmodel.DefaultViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
