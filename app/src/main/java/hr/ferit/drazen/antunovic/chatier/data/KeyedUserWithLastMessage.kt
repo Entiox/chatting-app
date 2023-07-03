@@ -5,7 +5,7 @@ data class KeyedUserWithLastMessage(
     val firstName: String = "",
     val lastName: String = "",
     val fullName: String = "",
-    val imagePath: String = "images/default.png",
+    val imagePath: String = "",
     val lastMessage: String = "",
-    val lastMessageTimeStamp: String = "",
+    val lastMessageTimeStamp: String = "00:00:00 01.01.2001.",
 )

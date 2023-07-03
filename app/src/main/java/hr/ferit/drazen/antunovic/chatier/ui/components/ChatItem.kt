@@ -64,7 +64,7 @@ fun ChatItem(
         Column(verticalArrangement = Arrangement.spacedBy(space = 10.dp)) {
             Text(text = user.fullName, style = MaterialTheme.typography.subtitle1)
             Text(
-                text = if (user.lastMessage.length <= 20) user.lastMessage else user.lastMessage.substring(startIndex = 0, endIndex = 20) + "..."
+                text = if (user.lastMessage.length <= 50) user.lastMessage else user.lastMessage.substring(startIndex = 0, endIndex = 50) + "..."
             )
         }
         if (isLongPressed) {

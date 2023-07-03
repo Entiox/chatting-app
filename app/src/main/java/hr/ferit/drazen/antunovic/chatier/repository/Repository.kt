@@ -44,11 +44,15 @@ interface Repository {
 
     fun fetchUsers(uid: String, fullName: String, scope: CoroutineScope): Flow<Result<List<KeyedUser>>>
 
-    fun fetchChat(uid: String, personUid: String): Flow<Result<out List<Message>>>
+    fun insertChat(uid: String, participantUid: String): Flow<Result<Nothing>>
+
+    fun fetchMessages(uid: String, participantUid: String): Flow<Result<out List<Message>>>
 
     @RequiresApi(Build.VERSION_CODES.O)
-    fun insertMessage(uid: String, personUid: String, content: String): Flow<Result<Nothing>>
+    fun insertMessage(uid: String, participantUid: String, content: String): Flow<Result<Nothing>>
 
-    fun deleteChat(uid: String, personUid: String): Flow<Result<Nothing>>
+    fun deleteChat(uid: String, participantUid: String): Flow<Result<Nothing>>
+
+    fun deleteMessages(uid: String, participantUid: String): Flow<Result<Nothing>>
 }
 

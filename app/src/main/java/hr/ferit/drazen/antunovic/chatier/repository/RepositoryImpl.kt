@@ -13,8 +13,15 @@ import hr.ferit.drazen.antunovic.chatier.data.*
 import hr.ferit.drazen.antunovic.chatier.firebase.FirebaseInstances
 import hr.ferit.drazen.antunovic.chatier.service.NotificationService
 import hr.ferit.drazen.antunovic.chatier.service.NotificationServiceImpl
-import kotlinx.coroutines.*
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.tasks.await
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -300,15 +307,16 @@ class RepositoryImpl(private val service: NotificationService = NotificationServ
     ): Flow<Result<List<KeyedUserWithLastMessage>>> {
         return callbackFlow {
             val jobs = mutableListOf<Job?>()
+            val mutex = Mutex()
             val chats = mutableListOf<KeyedUserWithLastMessage>()
             trySend(Result.Loading())
             FirebaseInstances.getDatabase().getReference("chats")
                 .child(uid).snapshots.collect {
-                    chats.clear()
                     jobs.forEach { job ->
                         job?.cancel()
                     }
                     jobs.clear()
+                    chats.clear()
                     if (it.value == null) {
                         trySend(Result.Success(chats.toList()))
                         return@collect
@@ -316,37 +324,120 @@ class RepositoryImpl(private val service: NotificationService = NotificationServ
                     it.children.forEach { chat ->
                         jobs.add(null)
                         jobs[jobs.indexOf(jobs.last())] = scope.launch {
+                            FirebaseInstances.getDatabase().getReference("messages").child(uid)
+                                .child(chat.key!!)
+                                .limitToLast(1).snapshots.collect { messagesSnapshot ->
+                                    if (messagesSnapshot.value == null) {
+                                        mutex.withLock {
+                                            if (chats.any { listItem -> listItem.uid == chat.key!! }) {
+                                                val index = chats.indexOf(
+                                                    chats
+                                                        .first { listItem -> listItem.uid == chat.key })
+                                                chats[index] = chats[index].copy(
+                                                    lastMessage = "",
+                                                )
+                                            }
+                                        }
+                                    } else {
+                                        val message =
+                                            messagesSnapshot.children.mapNotNull { message -> message.getValue<Message>()!! }
+                                        mutex.withLock {
+                                            if (chats.none { listItem -> listItem.uid == chat.key }) {
+                                                chats.add(
+                                                    KeyedUserWithLastMessage(
+                                                        uid = chat.key!!,
+                                                        lastMessage = if (message[0].senderUid == uid
+                                                        ) {
+                                                            "You: " + message[0].content
+                                                        } else {
+                                                            message[0].content
+                                                        }, lastMessageTimeStamp = message[0].timeStamp
+                                                    )
+                                                )
+                                            } else {
+                                                val index = chats.indexOf(chats.first { listItem -> listItem.uid == chat.key })
+                                                chats[index] =
+                                                    chats[index].copy(
+                                                        lastMessage = if (message[0].senderUid == uid
+                                                        ) {
+                                                            "You: " + message[0].content
+                                                        } else {
+                                                            message[0].content
+                                                        }, lastMessageTimeStamp = message[0].timeStamp
+                                                    )
+                                            }
+                                        }
+                                    }
+                                    trySend(
+                                        Result.Success(
+                                            chats.toList().sortedByDescending { chat1 ->
+                                                LocalDateTime.parse(
+                                                    chat1.lastMessageTimeStamp,
+                                                    dateTimeFormatter
+                                                )
+                                            })
+                                    )
+                                }
+                        }
+
+                        jobs.add(null)
+                        jobs[jobs.indexOf(jobs.last())] = scope.launch {
                             FirebaseInstances.getDatabase().getReference("users")
                                 .child(chat.key!!).snapshots.collect { userSnapshot ->
                                     if (userSnapshot.value == null) {
-                                        if (chats.any { listItem -> listItem.uid == chat.key!! }) {
-                                            chats.removeAt(chats.indexOf(chats.find { listItem -> listItem.uid == chat.key!! }))
+                                        mutex.withLock {
+                                            if (chats.any { listItem -> listItem.uid == chat.key!! }) {
+                                                val index = chats.indexOf(
+                                                    chats
+                                                        .first { listItem -> listItem.uid == chat.key })
+                                                chats[index] = chats[index].copy(
+                                                    firstName = "",
+                                                    lastName = "",
+                                                    fullName = "Deleted user",
+                                                    imagePath = ""
+                                                )
+                                            }
+                                            else {
+                                                chats.add(
+                                                    KeyedUserWithLastMessage(
+                                                        uid = chat.key!!,
+                                                        firstName = "",
+                                                        lastName = "",
+                                                        fullName = "Deleted user",
+                                                        imagePath = "",
+                                                    )
+                                                )
+                                            }
                                         }
                                     } else {
                                         val user = userSnapshot.getValue<User>()!!
-                                        val keyedUserWithLastMessage = KeyedUserWithLastMessage(
-                                            uid = userSnapshot.key!!,
-                                            firstName = user.firstName,
-                                            lastName = user.lastName,
-                                            fullName = user.fullName,
-                                            imagePath = Firebase.storage.reference.child(user.imagePath).downloadUrl.await()
-                                                .toString(),
-                                            lastMessage = if (chat.children.last()
-                                                    .getValue<Message>()!!.senderUid == uid
-                                            ) {
-                                                "You: " + chat.children.last()
-                                                    .getValue<Message>()!!.content
+                                        mutex.withLock {
+                                            if (chats.none { listItem -> listItem.uid == chat.key }) {
+                                                chats.add(
+                                                    KeyedUserWithLastMessage(
+                                                        uid = chat.key!!,
+                                                        firstName = user.firstName,
+                                                        lastName = user.lastName,
+                                                        fullName = user.fullName,
+                                                        imagePath = Firebase.storage.reference.child(
+                                                            user.imagePath
+                                                        ).downloadUrl.await()
+                                                            .toString(),
+                                                    )
+                                                )
                                             } else {
-                                                chat.children.last().getValue<Message>()!!.content
-                                            },
-                                            lastMessageTimeStamp = chat.children.last()
-                                                .getValue<Message>()!!.timeStamp,
-                                        )
-                                        if (chats.none { friend -> friend.uid === userSnapshot.key }) {
-                                            chats.add(keyedUserWithLastMessage)
-                                        } else {
-                                            chats[chats.indexOf(chats.first { friend -> friend.uid === userSnapshot.key })] =
-                                                keyedUserWithLastMessage
+                                                val index = chats.indexOf(chats.first { listItem -> listItem.uid == chat.key })
+                                                chats[index] =
+                                                    chats[index].copy(
+                                                        firstName = user.firstName,
+                                                        lastName = user.lastName,
+                                                        fullName = user.fullName,
+                                                        imagePath = Firebase.storage.reference.child(
+                                                            user.imagePath
+                                                        ).downloadUrl.await()
+                                                            .toString(),
+                                                    )
+                                            }
                                         }
                                     }
                                     trySend(
@@ -374,15 +465,16 @@ class RepositoryImpl(private val service: NotificationService = NotificationServ
     override fun fetchFriends(uid: String, scope: CoroutineScope): Flow<Result<List<KeyedUser>>> {
         return callbackFlow {
             val jobs = mutableListOf<Job?>()
+            val mutex = Mutex()
             val friends = mutableListOf<KeyedUser>()
             trySend(Result.Loading())
             FirebaseInstances.getDatabase().getReference("friends")
                 .child(uid).snapshots.collect {
-                    friends.clear()
                     jobs.forEach { job ->
                         job?.cancel()
                     }
                     jobs.clear()
+                    friends.clear()
                     if (it.value == null) {
                         trySend(Result.Success(friends.toList()))
                         return@collect
@@ -406,11 +498,13 @@ class RepositoryImpl(private val service: NotificationService = NotificationServ
                                             imagePath = Firebase.storage.reference.child(user.imagePath).downloadUrl.await()
                                                 .toString(),
                                         )
-                                        if (friends.none { friend -> friend.uid === userSnapshot.key }) {
-                                            friends.add(keyedUser)
-                                        } else {
-                                            friends[friends.indexOf(friends.first { friend -> friend.uid === userSnapshot.key })] =
-                                                keyedUser
+                                        mutex.withLock {
+                                            if (friends.none { friend -> friend.uid == userSnapshot.key }) {
+                                                friends.add(keyedUser)
+                                            } else {
+                                                friends[friends.indexOf(friends.first { friend -> friend.uid == userSnapshot.key })] =
+                                                    keyedUser
+                                            }
                                         }
                                     }
                                     trySend(
@@ -477,11 +571,36 @@ class RepositoryImpl(private val service: NotificationService = NotificationServ
         }
     }
 
-    override fun fetchChat(uid: String, personUid: String): Flow<Result<out List<Message>>> {
+    override fun insertChat(
+        uid: String,
+        participantUid: String
+    ): Flow<Result<Nothing>> {
         return flow {
             emit(Result.Loading())
-            FirebaseInstances.getDatabase().getReference("chats").child(uid)
-                .child(personUid).snapshots.collect { chatSnapshot ->
+            FirebaseInstances.getDatabase().getReference("chats").child(uid).child(participantUid)
+                .setValue(participantUid)
+                .await()
+            FirebaseInstances.getDatabase().getReference("chats").child(participantUid).child(uid)
+                .setValue(uid)
+                .await()
+            emit(Result.Success(null))
+        }.catch { e ->
+            emit(
+                Result.Error(
+                    information = if (e.message != null) e.message.toString() else "Unknown error"
+                )
+            )
+        }
+    }
+
+    override fun fetchMessages(
+        uid: String,
+        participantUid: String
+    ): Flow<Result<out List<Message>>> {
+        return flow {
+            emit(Result.Loading())
+            FirebaseInstances.getDatabase().getReference("messages").child(uid)
+                .child(participantUid).limitToLast(100).snapshots.collect { chatSnapshot ->
                     val messages = chatSnapshot.children.mapNotNull { it.getValue<Message>() }
                     emit(Result.Success(messages.reversed()))
                 }
@@ -498,16 +617,18 @@ class RepositoryImpl(private val service: NotificationService = NotificationServ
     @RequiresApi(Build.VERSION_CODES.O)
     override fun insertMessage(
         uid: String,
-        personUid: String,
+        participantUid: String,
         content: String
     ): Flow<Result<Nothing>> {
         return flow {
             emit(Result.Loading())
-            FirebaseInstances.getDatabase().getReference("chats").child(uid).child(personUid)
+            FirebaseInstances.getDatabase().getReference("messages").child(uid)
+                .child(participantUid)
                 .push()
                 .setValue(Message(dateTimeFormatter.format(LocalDateTime.now()), content, uid))
                 .await()
-            FirebaseInstances.getDatabase().getReference("chats").child(personUid).child(uid)
+            FirebaseInstances.getDatabase().getReference("messages").child(participantUid)
+                .child(uid)
                 .push()
                 .setValue(Message(dateTimeFormatter.format(LocalDateTime.now()), content, uid))
                 .await()
@@ -521,10 +642,27 @@ class RepositoryImpl(private val service: NotificationService = NotificationServ
         }
     }
 
-    override fun deleteChat(uid: String, personUid: String): Flow<Result<Nothing>> {
+    override fun deleteChat(uid: String, participantUid: String): Flow<Result<Nothing>> {
         return flow {
             emit(Result.Loading())
-            FirebaseInstances.getDatabase().getReference("chats").child(uid).child(personUid)
+            FirebaseInstances.getDatabase().getReference("chats").child(uid).child(participantUid)
+                .removeValue()
+                .await()
+            emit(Result.Success(null))
+        }.catch { e ->
+            emit(
+                Result.Error(
+                    information = if (e.message != null) e.message.toString() else "Unknown error"
+                )
+            )
+        }
+    }
+
+    override fun deleteMessages(uid: String, participantUid: String): Flow<Result<Nothing>> {
+        return flow {
+            emit(Result.Loading())
+            FirebaseInstances.getDatabase().getReference("messages").child(uid)
+                .child(participantUid)
                 .removeValue()
                 .await()
             emit(Result.Success(null))

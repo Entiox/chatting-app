@@ -30,10 +30,14 @@ class ChatViewModel(private val participantUid: String) : DefaultViewModel() {
         MutableStateFlow(Result.Waiting())
     val messageInsertion = _messageInsertion.asStateFlow()
 
+    private val _chatInsertion: MutableStateFlow<Result<Nothing>> =
+        MutableStateFlow(Result.Waiting())
+    val chatInsertion = _chatInsertion.asStateFlow()
+
     @RequiresApi(Build.VERSION_CODES.O)
-    val chat = repository.fetchChat(
+    val chat = repository.fetchMessages(
         uid = Firebase.auth.currentUser!!.uid,
-        personUid = participantUid,
+        participantUid = participantUid,
     ).stateIn(
         scope = viewModelScope,
         started = SharingStarted.Lazily,
@@ -63,10 +67,21 @@ class ChatViewModel(private val participantUid: String) : DefaultViewModel() {
     fun insertMessage(content: String) {
         viewModelScope.launch {
             _messaging.value = Result.Loading()
+            repository.insertChat(
+                uid = Firebase.auth.currentUser!!.uid,
+                participantUid = participantUid,
+            ).collect {
+                _chatInsertion.value = it
+            }
+            if (_chatInsertion.value is Result.Error) {
+                _messaging.value =
+                    Result.Error(information = _chatInsertion.value.information!!)
+                return@launch
+            }
             repository.insertMessage(
                 uid = Firebase.auth.currentUser!!.uid,
-                personUid = participantUid,
-                content = content
+                participantUid = participantUid,
+                content = content,
             ).collect {
                 _messageInsertion.value = it
             }
@@ -79,7 +94,7 @@ class ChatViewModel(private val participantUid: String) : DefaultViewModel() {
                 repository.sendNotification(
                     token = deviceToken.value.data!!,
                     title = currentUser.value.data!!.fullName + " sent you a message",
-                    body = if (content.length <= 30) content else (content.substring(startIndex = 0, endIndex = 30) + "..."),
+                    body = content,
                 ).collect {
                     _messaging.value = it
                 }
@@ -108,6 +123,7 @@ class ChatViewModel(private val participantUid: String) : DefaultViewModel() {
     override fun refresh() {
         _deviceTokenDeletion.value = Result.Waiting()
         _messaging.value = Result.Waiting()
+        _chatInsertion.value = Result.Waiting()
         _messageInsertion.value = Result.Waiting()
         _signOut.value = Result.Waiting()
     }

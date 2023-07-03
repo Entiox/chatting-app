@@ -2,7 +2,6 @@ package hr.ferit.drazen.antunovic.chatier.ui.routes.chat
 
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,17 +14,20 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.text.TextRange
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import com.google.firebase.auth.ktx.auth
 import com.google.firebase.ktx.Firebase
 import hr.ferit.drazen.antunovic.chatier.R
 import hr.ferit.drazen.antunovic.chatier.data.Message
-import hr.ferit.drazen.antunovic.chatier.data.User
 import hr.ferit.drazen.antunovic.chatier.data.Result
+import hr.ferit.drazen.antunovic.chatier.data.User
+import hr.ferit.drazen.antunovic.chatier.ui.components.MessageItem
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -44,7 +46,7 @@ fun Chat(modifier: Modifier = Modifier, viewModel: ChatViewModel, onNavigateToSt
         viewModel.refresh()
         isUserDeleted = true
         onNavigateToStart()
-    } else if(signOutResult is Result.Loading) {
+    } else if (signOutResult is Result.Loading) {
         return
     } else if (currentUserResult is Result.Success && currentUserResult.data == null) {
         viewModel.signOut()
@@ -62,16 +64,17 @@ fun Chat(modifier: Modifier = Modifier, viewModel: ChatViewModel, onNavigateToSt
     ) {
         ChatScreen(
             modifier = modifier,
-            participant = if (participantResult.data != null) participantResult.data!! else User(
-                fullName = stringResource(id = R.string.deleted_user)
-            ),
+            participant = participantResult.data,
             messages = chatResult.data!!,
             messagingResult = messagingResult,
             onMessageSend = viewModel::insertMessage
         )
     } else {
         Box(modifier = Modifier.fillMaxSize()) {
-            Text(text = stringResource(id = R.string.loading_chat), modifier = Modifier.align(Alignment.Center))
+            Text(
+                text = stringResource(id = R.string.loading_chat),
+                modifier = Modifier.align(Alignment.Center)
+            )
         }
     }
 }
@@ -79,18 +82,26 @@ fun Chat(modifier: Modifier = Modifier, viewModel: ChatViewModel, onNavigateToSt
 @Composable
 fun ChatScreen(
     modifier: Modifier = Modifier,
-    participant: User,
+    participant: User?,
     messages: List<Message>,
     messagingResult: Result<out Any?>,
     onMessageSend: (String) -> Unit
 ) {
-    var message by rememberSaveable { mutableStateOf(value = "") }
+    var message by remember {
+        mutableStateOf(
+            TextFieldValue(
+                text = "",
+                selection = TextRange.Zero
+            )
+        )
+    }
+    val focusRequester = remember { FocusRequester() }
 
     Column(modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxWidth()) {
             Text(
                 modifier = Modifier.padding(horizontal = 25.dp, vertical = 20.dp),
-                text = participant.fullName,
+                text = participant?.fullName ?: stringResource(id = R.string.deleted_user),
                 style = MaterialTheme.typography.h5,
             )
         }
@@ -108,7 +119,7 @@ fun ChatScreen(
                     ) {
                         Text(
                             modifier = Modifier.padding(vertical = 10.dp, horizontal = 20.dp),
-                            text = stringResource(id = R.string.sending)
+                            text = stringResource(id = R.string.sending),
                         )
                     }
                 } else if (messagingResult is Result.Error) {
@@ -118,97 +129,80 @@ fun ChatScreen(
                     ) {
                         Text(
                             modifier = Modifier.padding(vertical = 10.dp, horizontal = 20.dp),
-                            text = messagingResult.information!!
+                            text = messagingResult.information!!,
                         )
                     }
                 }
             }
             items(messages) {
                 if (it.senderUid == Firebase.auth.currentUser!!.uid) {
-                    Row(
+                    MessageItem(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.End,
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .widthIn(min = Dp.Unspecified, max = 280.dp)
-                                .padding(vertical = 10.dp, horizontal = 20.dp)
-                                .clip(shape = MaterialTheme.shapes.medium)
-                                .background(
-                                    color = MaterialTheme.colors.secondary.copy(
-                                        alpha = 0.8f,
-                                        blue = 0.5f
-                                    )
-                                )
-                                .padding(all = 15.dp),
-                        ) {
-                            Text(
-                                modifier = Modifier.padding(bottom = 20.dp),
-                                text = it.content,
-                                color = MaterialTheme.colors.onSecondary,
+                        content = it.content,
+                        timeStamp = it.timeStamp,
+                        arrangement = Arrangement.End,
+                        backgroundColor = MaterialTheme.colors.secondary.copy(
+                            alpha = 0.8f,
+                            blue = 0.5f,
+                        ),
+                        onLongClick = {
+                            focusRequester.requestFocus()
+                            val text = "Reply to \"${it.content}\": "
+                            message = message.copy(
+                                text = text,
+                                selection = TextRange(index = text.length)
                             )
-                            Text(
-                                modifier = Modifier,
-                                text = it.timeStamp,
-                                color = MaterialTheme.colors.onSecondary,
-                                style = MaterialTheme.typography.caption,
-                            )
-                        }
-                    }
+                        },
+                    )
                 } else {
-                    Row(
+                    MessageItem(
                         modifier = Modifier.fillMaxWidth(),
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .widthIn(min = Dp.Unspecified, max = 280.dp)
-                                .padding(vertical = 10.dp, horizontal = 20.dp)
-                                .clip(shape = MaterialTheme.shapes.medium)
-                                .background(color = MaterialTheme.colors.secondary)
-                                .padding(all = 15.dp),
-                        ) {
-                            Text(
-                                modifier = Modifier.padding(bottom = 20.dp),
-                                text = it.content,
-                                color = MaterialTheme.colors.onSecondary,
+                        content = it.content,
+                        timeStamp = it.timeStamp,
+                        arrangement = Arrangement.Start,
+                        backgroundColor = MaterialTheme.colors.secondary,
+                        onLongClick = {
+                            focusRequester.requestFocus()
+                            val text = "Reply to \"${it.content}\": "
+                            message = message.copy(
+                                text = text,
+                                selection = TextRange(index = text.length)
                             )
-                            Text(
-                                modifier = Modifier,
-                                text = it.timeStamp,
-                                color = MaterialTheme.colors.onSecondary,
-                                style = MaterialTheme.typography.caption,
-                            )
-                        }
-                    }
+                        },
+                    )
                 }
             }
         }
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 15.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            OutlinedTextField(
-                modifier = Modifier.weight(weight = 1f),
-                placeholder = { Text(text = stringResource(id = R.string.type_message_here)) },
-                value = message,
-                onValueChange = { message = it },
-                singleLine = true,
-            )
-            Icon(
+        if (participant != null) {
+            Row(
                 modifier = Modifier
-                    .padding(start = 20.dp, end = 5.dp)
-                    .clickable {
-                        if (message.isNotEmpty()) {
-                            onMessageSend(message)
-                            message = ""
-                        }
-                    },
-                painter = painterResource(id = R.drawable.ic_send),
-                contentDescription = stringResource(id = R.string.send_message),
-                tint = MaterialTheme.colors.onBackground,
-            )
+                    .fillMaxWidth()
+                    .padding(horizontal = 15.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                OutlinedTextField(
+                    modifier = Modifier
+                        .weight(weight = 1f)
+                        .focusRequester(focusRequester),
+                    placeholder = { Text(text = stringResource(id = R.string.type_message_here)) },
+                    value = message,
+                    onValueChange = { message = it },
+                    maxLines = 5,
+                )
+                Icon(
+                    modifier = Modifier
+                        .padding(start = 20.dp, end = 5.dp)
+                        .clickable {
+                            if (message.text.isNotEmpty()) {
+                                onMessageSend(message.text)
+                                message = message.copy(text = "")
+                            }
+                        },
+                    painter = painterResource(id = R.drawable.ic_send),
+                    contentDescription = stringResource(id = R.string.send_message),
+                    tint = MaterialTheme.colors.onBackground,
+                )
+            }
         }
     }
 }

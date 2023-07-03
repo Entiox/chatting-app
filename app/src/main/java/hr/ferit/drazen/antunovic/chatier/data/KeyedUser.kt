@@ -5,5 +5,5 @@ data class KeyedUser(
     val firstName: String = "",
     val lastName: String = "",
     val fullName: String = "",
-    val imagePath: String = "images/default.png",
+    val imagePath: String = "",
 )
