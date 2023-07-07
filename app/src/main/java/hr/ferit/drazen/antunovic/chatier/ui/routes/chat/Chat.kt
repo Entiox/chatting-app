@@ -126,7 +126,9 @@ fun ChatScreen(
 
     val launcher = rememberLauncherForActivityResult(contract =
     ActivityResultContracts.PickVisualMedia(), onResult = {
-        onImageSend(it)
+        if(it != null) {
+            onImageSend(it)
+        }
     })
 
     Column(modifier = modifier.fillMaxSize()) {

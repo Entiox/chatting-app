@@ -129,7 +129,9 @@ fun PersonalInformationScreen(
     val launcher = rememberLauncherForActivityResult(contract =
     ActivityResultContracts.PickVisualMedia(), onResult = {
         imageUri = it
-        wasImageUriModified = true
+        if(it != null) {
+            wasImageUriModified = true
+        }
     })
     Column(
         modifier = modifier.verticalScroll(state = rememberScrollState()),
