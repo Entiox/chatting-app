@@ -154,8 +154,8 @@ class ChatViewModel(private val participantUid: String) : DefaultViewModel() {
             if (deviceToken.value.data != null) {
                 repository.sendNotification(
                     token = deviceToken.value.data!!,
-                    title = currentUser.value.data!!.fullName + " sent you a photo",
-                    body = "Open application to see the photo",
+                    title = currentUser.value.data!!.fullName + " sent you an image",
+                    body = "Open application to see the image",
                 ).collect {
                     _messaging.value = it
                 }
