@@ -47,6 +47,7 @@ fun PersonalInformation(
     val signOutResult by viewModel.signOut.collectAsState()
     val userUpdateResult by viewModel.userUpdate.collectAsState()
     val userResult by viewModel.currentUser.collectAsState()
+    val profilePictureRemovalResult by viewModel.profilePictureRemoval.collectAsState()
     val userAccountDeletion by viewModel.userAccountDeletion.collectAsState()
     BackHandler(enabled = userAccountDeletion is Result.Loading) { }
     if (signOutResult is Result.Success) {
@@ -71,13 +72,16 @@ fun PersonalInformation(
     } else if (userResult is Result.Success) {
         PersonalInformationScreen(
             modifier = modifier, userUpdateResult = userUpdateResult,
-            onSaveClick = { imageUri, firstName, lastName, user ->
-                viewModel.updateUser(imageUri, firstName, lastName, user)
+            onSaveClick = { imageUri, firstName, lastName ->
+                viewModel.updateUser(imageUri = imageUri, firstName = firstName, lastName = lastName)
             },
-            refreshUserUpdate = viewModel::refreshUserUpdateResult,
+            refreshUserUpdateResult = viewModel::refreshUserUpdate,
+            refreshProfilePictureRemovalResult = viewModel::refreshProfilePictureRemoval,
             user = userResult.data!!,
             onDeleteClick = viewModel::deleteUser,
-            userAccountDeletionResult = userAccountDeletion
+            userAccountDeletionResult = userAccountDeletion,
+            onProfilePictureRemoveClick = viewModel::removeProfilePicture,
+            profilePictureRemovalResult = profilePictureRemovalResult
         )
     } else if (userResult is Result.Loading) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -94,11 +98,14 @@ fun PersonalInformation(
 fun PersonalInformationScreen(
     modifier: Modifier = Modifier,
     user: User,
-    onSaveClick: (Uri?, String?, String?, User) -> Unit,
+    onSaveClick: (Uri?, String?, String?) -> Unit,
     userUpdateResult: Result<out Any?>,
+    profilePictureRemovalResult: Result<out Any?>,
     onDeleteClick: () -> Unit,
+    onProfilePictureRemoveClick: () -> Unit,
     userAccountDeletionResult: Result<out Any?>,
-    refreshUserUpdate: () -> Unit,
+    refreshUserUpdateResult: () -> Unit,
+    refreshProfilePictureRemovalResult: () -> Unit,
 ) {
     val context = LocalContext.current
     val imagesPermission: Boolean by rememberSaveable {
@@ -117,6 +124,7 @@ fun PersonalInformationScreen(
         )
     }
     var imageUri by rememberSaveable { mutableStateOf(Uri.parse(user.imagePath)) }
+    var isProfilePictureRemoved by rememberSaveable { mutableStateOf(value = false) }
     var firstName by rememberSaveable { mutableStateOf(user.firstName) }
     var lastName by rememberSaveable { mutableStateOf(user.lastName) }
 
@@ -133,6 +141,10 @@ fun PersonalInformationScreen(
             wasImageUriModified = true
         }
     })
+    if(profilePictureRemovalResult is Result.Success) {
+        imageUri = Uri.parse(profilePictureRemovalResult.data!! as String)
+        refreshProfilePictureRemovalResult()
+    }
     Column(
         modifier = modifier.verticalScroll(state = rememberScrollState()),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -161,6 +173,18 @@ fun PersonalInformationScreen(
                 contentDescription = stringResource(id = R.string.edit_profile_picture),
                 tint = Color.White
             )
+        }
+        Button(
+            modifier = Modifier.padding(top = 5.dp, bottom = 40.dp),
+            onClick = {
+                if (userUpdateResult !is Result.Loading) {
+                    onProfilePictureRemoveClick()
+                }
+            },
+            shape = MaterialTheme.shapes.large,
+            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp),
+        ) {
+            Text(text = stringResource(id = R.string.remove_profile_picture))
         }
         Text(
             modifier = Modifier.padding(bottom = 2.dp),
@@ -203,7 +227,6 @@ fun PersonalInformationScreen(
                             if (wasImageUriModified) imageUri else null,
                             if (wasFirstNameModified) firstName else null,
                             if (wasLastNameModified) lastName else null,
-                            user,
                         )
                     }
                 },
@@ -226,7 +249,7 @@ fun PersonalInformationScreen(
             wasImageUriModified = false
             wasFirstNameModified = false
             wasLastNameModified = false
-            refreshUserUpdate()
+            refreshUserUpdateResult()
         }
         Button(
             modifier = Modifier.padding(vertical = 40.dp),
