@@ -59,8 +59,7 @@ fun FriendItem(
                 AsyncImage(
                     model = friend.imagePath,
                     contentDescription = stringResource(id = R.string.profile_picture),
-                    modifier = Modifier.size(size = 280.dp),
-                    contentScale = ContentScale.FillBounds,
+                    contentScale = ContentScale.Fit,
                 )
             }
         }

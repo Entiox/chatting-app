@@ -351,11 +351,13 @@ class RepositoryImpl(private val service: NotificationService = NotificationServ
                                                             "You: " + message[0].content
                                                         } else {
                                                             message[0].content
-                                                        }, lastMessageTimeStamp = message[0].timeStamp
+                                                        },
+                                                        lastMessageTimeStamp = message[0].timeStamp
                                                     )
                                                 )
                                             } else {
-                                                val index = chats.indexOf(chats.first { listItem -> listItem.uid == chat.key })
+                                                val index =
+                                                    chats.indexOf(chats.first { listItem -> listItem.uid == chat.key })
                                                 chats[index] =
                                                     chats[index].copy(
                                                         lastMessage = if (message[0].senderUid == uid
@@ -363,7 +365,8 @@ class RepositoryImpl(private val service: NotificationService = NotificationServ
                                                             "You: " + message[0].content
                                                         } else {
                                                             message[0].content
-                                                        }, lastMessageTimeStamp = message[0].timeStamp
+                                                        },
+                                                        lastMessageTimeStamp = message[0].timeStamp
                                                     )
                                             }
                                         }
@@ -396,8 +399,7 @@ class RepositoryImpl(private val service: NotificationService = NotificationServ
                                                     fullName = "Deleted user",
                                                     imagePath = ""
                                                 )
-                                            }
-                                            else {
+                                            } else {
                                                 chats.add(
                                                     KeyedUserWithLastMessage(
                                                         uid = chat.key!!,
@@ -426,7 +428,8 @@ class RepositoryImpl(private val service: NotificationService = NotificationServ
                                                     )
                                                 )
                                             } else {
-                                                val index = chats.indexOf(chats.first { listItem -> listItem.uid == chat.key })
+                                                val index =
+                                                    chats.indexOf(chats.first { listItem -> listItem.uid == chat.key })
                                                 chats[index] =
                                                     chats[index].copy(
                                                         firstName = user.firstName,
@@ -601,7 +604,15 @@ class RepositoryImpl(private val service: NotificationService = NotificationServ
             emit(Result.Loading())
             FirebaseInstances.getDatabase().getReference("messages").child(uid)
                 .child(participantUid).limitToLast(100).snapshots.collect { chatSnapshot ->
-                    val messages = chatSnapshot.children.mapNotNull { it.getValue<Message>() }
+                    val messages = chatSnapshot.children.mapNotNull {
+                        val message = it.getValue<Message>()!!
+                        val content = if(message.type == "image") {
+                            Firebase.storage.reference.child(message.content).downloadUrl.await().toString()
+                        } else {
+                            message.content
+                        }
+                        message.copy(content = content)
+                    }
                     emit(Result.Success(messages.reversed()))
                 }
             emit(Result.Success(null))
@@ -618,19 +629,34 @@ class RepositoryImpl(private val service: NotificationService = NotificationServ
     override fun insertMessage(
         uid: String,
         participantUid: String,
-        content: String
+        content: String,
+        type: String
     ): Flow<Result<Nothing>> {
         return flow {
             emit(Result.Loading())
             FirebaseInstances.getDatabase().getReference("messages").child(uid)
                 .child(participantUid)
                 .push()
-                .setValue(Message(dateTimeFormatter.format(LocalDateTime.now()), content, uid))
+                .setValue(
+                    Message(
+                        timeStamp = dateTimeFormatter.format(LocalDateTime.now()),
+                        content = content,
+                        senderUid = uid,
+                        type = type,
+                    )
+                )
                 .await()
             FirebaseInstances.getDatabase().getReference("messages").child(participantUid)
                 .child(uid)
                 .push()
-                .setValue(Message(dateTimeFormatter.format(LocalDateTime.now()), content, uid))
+                .setValue(
+                    Message(
+                        timeStamp = dateTimeFormatter.format(LocalDateTime.now()),
+                        content = content,
+                        senderUid = uid,
+                        type = type,
+                    )
+                )
                 .await()
             emit(Result.Success(null))
         }.catch { e ->

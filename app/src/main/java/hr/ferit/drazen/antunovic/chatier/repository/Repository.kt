@@ -49,7 +49,7 @@ interface Repository {
     fun fetchMessages(uid: String, participantUid: String): Flow<Result<out List<Message>>>
 
     @RequiresApi(Build.VERSION_CODES.O)
-    fun insertMessage(uid: String, participantUid: String, content: String): Flow<Result<Nothing>>
+    fun insertMessage(uid: String, participantUid: String, content: String, type: String): Flow<Result<Nothing>>
 
     fun deleteChat(uid: String, participantUid: String): Flow<Result<Nothing>>
 

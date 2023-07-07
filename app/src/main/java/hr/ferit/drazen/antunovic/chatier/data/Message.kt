@@ -4,4 +4,5 @@ data class Message(
     val timeStamp: String = "",
     val content: String = "",
     val senderUid: String = "",
+    val type: String = "text",
 )
