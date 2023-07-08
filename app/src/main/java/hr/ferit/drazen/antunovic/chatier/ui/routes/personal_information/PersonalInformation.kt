@@ -124,7 +124,6 @@ fun PersonalInformationScreen(
         )
     }
     var imageUri by rememberSaveable { mutableStateOf(Uri.parse(user.imagePath)) }
-    var isProfilePictureRemoved by rememberSaveable { mutableStateOf(value = false) }
     var firstName by rememberSaveable { mutableStateOf(user.firstName) }
     var lastName by rememberSaveable { mutableStateOf(user.lastName) }
 
