@@ -111,17 +111,15 @@ class ChatViewModel(private val participantUid: String) : DefaultViewModel() {
     }
 
     @RequiresApi(Build.VERSION_CODES.O)
-    fun insertImage(imageUri: Uri?) {
+    fun insertImage(imageUri: Uri) {
         viewModelScope.launch {
             _messaging.value = Result.Loading()
-            var imagePath = "images/default"
-            if (imageUri != null) {
-                repository.uploadImage(imageUri = imageUri).collect {
-                    if (it is Result.Success) {
-                        imagePath = it.data!!
-                    }
-                    _imageUpload.value = it
+            var imagePath = ""
+            repository.uploadImage(imageUri = imageUri).collect {
+                if (it is Result.Success) {
+                    imagePath = it.data!!
                 }
+                _imageUpload.value = it
             }
             if (_imageUpload.value is Result.Error) {
                 _messaging.value = Result.Error(information = _imageUpload.value.information!!)

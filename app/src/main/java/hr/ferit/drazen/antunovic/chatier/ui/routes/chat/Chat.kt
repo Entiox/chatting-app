@@ -96,7 +96,7 @@ fun ChatScreen(
     messages: List<Message>,
     messagingResult: Result<out Any?>,
     onMessageSend: (String) -> Unit,
-    onImageSend: (Uri?) -> Unit,
+    onImageSend: (Uri) -> Unit,
 ) {
     val context = LocalContext.current
     val imagesPermission: Boolean by rememberSaveable {
@@ -227,7 +227,7 @@ fun ChatScreen(
                         .padding(start = 5.dp, end = 20.dp)
                         .clickable {
                             if (imagesPermission) {
-                                launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                                launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
                             }
                         },
                     painter = painterResource(id = R.drawable.ic_insert_photo),
