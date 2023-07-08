@@ -237,7 +237,7 @@ fun PersonalInformationScreen(
         }
         if (userUpdateResult is Result.Loading) {
             Text(
-                text = stringResource(id = R.string.loading),
+                text = stringResource(id = R.string.saving),
             )
         } else if (userUpdateResult is Result.Error) {
             Text(
