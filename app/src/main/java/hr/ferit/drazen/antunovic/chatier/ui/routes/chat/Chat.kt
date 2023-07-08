@@ -227,7 +227,7 @@ fun ChatScreen(
                         .padding(start = 5.dp, end = 20.dp)
                         .clickable {
                             if (imagesPermission) {
-                                launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo))
+                                launcher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
                             }
                         },
                     painter = painterResource(id = R.drawable.ic_insert_photo),
