@@ -17,9 +17,9 @@
     <string name="first_name">First name</string>
     <string name="last_name">Last name</string>
     <string name="loading_profile">Loading profile</string>
-    <string name="messages">Messages</string>
+    <string name="chats">Chats</string>
     <string name="friends">Friends</string>
-    <string name="loading_messages">Loading messages</string>
+    <string name="loading_chats">Loading chats</string>
     <string name="personal_information">Personal information</string>
     <string name="options">Options</string>
     <string name="select_image">Select image</string>

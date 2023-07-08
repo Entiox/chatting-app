@@ -125,14 +125,14 @@ fun HomeScreen(
                     }
                 ) {
                     if (pagerState.currentPage == 0) {
-                        Text(text = stringResource(id = R.string.messages), fontWeight = FontWeight.Bold)
+                        Text(text = stringResource(id = R.string.chats), fontWeight = FontWeight.Bold)
                         Divider(
                             modifier = Modifier.padding(top = 7.dp),
                             thickness = 2.dp,
                             color = MaterialTheme.colors.onBackground
                         )
                     } else {
-                        Text(text = stringResource(id = R.string.messages))
+                        Text(text = stringResource(id = R.string.chats))
                     }
                 }
                 Column(modifier = Modifier
@@ -184,7 +184,7 @@ fun HomeScreen(
                             item {
                                 Box(modifier = Modifier.fillMaxSize()) {
                                     Text(
-                                        text = stringResource(id = R.string.loading_messages),
+                                        text = stringResource(id = R.string.loading_chats),
                                         modifier = Modifier.align(Alignment.Center)
                                     )
                                 }

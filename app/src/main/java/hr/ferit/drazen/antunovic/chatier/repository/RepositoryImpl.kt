@@ -334,6 +334,7 @@ class RepositoryImpl(private val service: NotificationService = NotificationServ
                                                     chats
                                                         .first { listItem -> listItem.uid == chat.key })
                                                 chats[index] = chats[index].copy(
+                                                    lastMessageType = "text",
                                                     lastMessage = "",
                                                 )
                                             }
@@ -346,13 +347,21 @@ class RepositoryImpl(private val service: NotificationService = NotificationServ
                                                 chats.add(
                                                     KeyedUserWithLastMessage(
                                                         uid = chat.key!!,
-                                                        lastMessage = if (message[0].senderUid == uid
-                                                        ) {
-                                                            "You: " + message[0].content
+                                                        lastMessage = if (message[0].senderUid == uid) {
+                                                            if(message[0].type == "image") {
+                                                                "You: Sent an image"
+                                                            } else {
+                                                                "You: " + message[0].content
+                                                            }
                                                         } else {
-                                                            message[0].content
+                                                            if(message[0].type == "image") {
+                                                                "Sent an image"
+                                                            } else {
+                                                                message[0].content
+                                                            }
                                                         },
-                                                        lastMessageTimeStamp = message[0].timeStamp
+                                                        lastMessageTimeStamp = message[0].timeStamp,
+                                                        lastMessageType = message[0].type,
                                                     )
                                                 )
                                             } else {
@@ -360,11 +369,18 @@ class RepositoryImpl(private val service: NotificationService = NotificationServ
                                                     chats.indexOf(chats.first { listItem -> listItem.uid == chat.key })
                                                 chats[index] =
                                                     chats[index].copy(
-                                                        lastMessage = if (message[0].senderUid == uid
-                                                        ) {
-                                                            "You: " + message[0].content
+                                                        lastMessage = if (message[0].senderUid == uid) {
+                                                            if(message[0].type == "image") {
+                                                                "You: Sent an image"
+                                                            } else {
+                                                                "You: " + message[0].content
+                                                            }
                                                         } else {
-                                                            message[0].content
+                                                            if(message[0].type == "image") {
+                                                                "Sent an image"
+                                                            } else {
+                                                                message[0].content
+                                                            }
                                                         },
                                                         lastMessageTimeStamp = message[0].timeStamp
                                                     )
@@ -397,7 +413,7 @@ class RepositoryImpl(private val service: NotificationService = NotificationServ
                                                     firstName = "",
                                                     lastName = "",
                                                     fullName = "Deleted user",
-                                                    imagePath = ""
+                                                    imagePath = "",
                                                 )
                                             } else {
                                                 chats.add(
