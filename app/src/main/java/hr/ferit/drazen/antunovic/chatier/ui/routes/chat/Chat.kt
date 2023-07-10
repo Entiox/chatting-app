@@ -125,9 +125,9 @@ fun ChatScreen(
     val focusRequester = remember { FocusRequester() }
 
     val launcher = rememberLauncherForActivityResult(contract =
-    ActivityResultContracts.PickVisualMedia(), onResult = {
-        if(it != null) {
-            onImageSend(it)
+    ActivityResultContracts.PickMultipleVisualMedia(), onResult = {
+        for(item in it) {
+            onImageSend(item)
         }
     })
 
@@ -169,6 +169,12 @@ fun ChatScreen(
                 }
             }
             items(messages) {
+                val replyTo = if (it.type != "image") {
+                    "\"${it.content}\""
+                } else {
+                    "image at ${it.timeStamp}"
+                }
+                val text = "Reply to ${replyTo}: "
                 if (it.senderUid == Firebase.auth.currentUser!!.uid) {
                     MessageItem(
                         modifier = Modifier.fillMaxWidth(),
@@ -180,12 +186,6 @@ fun ChatScreen(
                         ),
                         onLongClick = {
                             focusRequester.requestFocus()
-                            val replyTo = if(it.type != "image") {
-                                "\"${it.content}\""
-                            } else {
-                                "image"
-                            }
-                            val text = "Reply to ${replyTo}: "
                             message = message.copy(
                                 text = text,
                                 selection = TextRange(index = text.length)
@@ -200,12 +200,6 @@ fun ChatScreen(
                         backgroundColor = MaterialTheme.colors.secondary,
                         onLongClick = {
                             focusRequester.requestFocus()
-                            val replyTo = if(it.type != "image") {
-                                "\"${it.content}\""
-                            } else {
-                                "image"
-                            }
-                            val text = "Reply to ${replyTo}: "
                             message = message.copy(
                                 text = text,
                                 selection = TextRange(index = text.length)

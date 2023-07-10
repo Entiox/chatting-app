@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -32,7 +33,7 @@ fun MessageItem(
     backgroundColor: Color,
     onLongClick: () -> Unit,
 ) {
-    var isImageOpened by rememberSaveable { mutableStateOf(false) }
+    val uriHandler = LocalUriHandler.current
 
     Row(
         modifier = modifier.combinedClickable(
@@ -56,18 +57,9 @@ fun MessageItem(
                     modifier = Modifier
                         .clip(shape = RectangleShape)
                         .padding(bottom = 10.dp)
-                        .clickable { isImageOpened = true },
+                        .clickable { uriHandler.openUri(message.content) },
                     contentScale = ContentScale.Fit,
                 )
-                if (isImageOpened) {
-                    Dialog(onDismissRequest = { isImageOpened = false }) {
-                        AsyncImage(
-                            model = message.content,
-                            contentDescription = null,
-                            contentScale = ContentScale.Fit,
-                        )
-                    }
-                }
             } else {
                 Text(
                     modifier = Modifier.padding(bottom = 20.dp),
