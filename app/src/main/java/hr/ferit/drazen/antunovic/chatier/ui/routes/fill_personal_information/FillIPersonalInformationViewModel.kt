@@ -7,7 +7,8 @@ import com.google.firebase.ktx.Firebase
 import com.google.firebase.messaging.ktx.messaging
 import hr.ferit.drazen.antunovic.chatier.data.Result
 import hr.ferit.drazen.antunovic.chatier.viewmodel.DefaultViewModel
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 

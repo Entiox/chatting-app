@@ -9,7 +9,11 @@ import com.google.firebase.database.ktx.getValue
 import com.google.firebase.database.ktx.snapshots
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
-import hr.ferit.drazen.antunovic.chatier.data.*
+import hr.ferit.drazen.antunovic.chatier.data.User
+import hr.ferit.drazen.antunovic.chatier.data.KeyedUser
+import hr.ferit.drazen.antunovic.chatier.data.KeyedUserWithLastMessage
+import hr.ferit.drazen.antunovic.chatier.data.Message
+import hr.ferit.drazen.antunovic.chatier.data.Result
 import hr.ferit.drazen.antunovic.chatier.firebase.FirebaseInstances
 import hr.ferit.drazen.antunovic.chatier.service.NotificationService
 import hr.ferit.drazen.antunovic.chatier.service.NotificationServiceImpl
@@ -25,7 +29,7 @@ import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.tasks.await
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import java.util.*
+import java.util.UUID
 
 class RepositoryImpl(private val service: NotificationService = NotificationServiceImpl()) :
     Repository {

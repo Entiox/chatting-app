@@ -4,7 +4,10 @@ import android.net.Uri
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.google.firebase.auth.AuthResult
-import hr.ferit.drazen.antunovic.chatier.data.*
+import hr.ferit.drazen.antunovic.chatier.data.KeyedUser
+import hr.ferit.drazen.antunovic.chatier.data.KeyedUserWithLastMessage
+import hr.ferit.drazen.antunovic.chatier.data.Message
+import hr.ferit.drazen.antunovic.chatier.data.User
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 
