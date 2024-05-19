@@ -14,7 +14,6 @@ import io.ktor.http.contentType
 import io.ktor.http.headers
 import io.ktor.serialization.kotlinx.json.json
 
-
 class NotificationServiceImpl : NotificationService {
     private val messagingUrl = "https://fcm.googleapis.com/fcm/send"
     private val serverKey =
